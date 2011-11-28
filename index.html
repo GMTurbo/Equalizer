@@ -237,7 +237,7 @@
 					scaley = Math.min(scaley, 255);
 					scaley = Math.max(scaley, 0);
 					grid[i].scale.y = fft.spectrum[i*2] != 0 ? fft.spectrum[i*2]* 1000: 1;
-					colorh = colorToHex('rgb('+Math.floor(255-scaley)+', '+ 128 +', '+ Math.floor(scaley) + ')');
+					colorh = colorToHex('rgb('+Math.floor(50*scaley)+', '+ 128 +', '+ Math.floor(100*scaley) + ')');
 					grid[i].materials[0].color.setHex(colorh);
 					//grid[i].materials[0] = new THREE.MeshLambertMaterial( { color: Math.random()*0xffffff } );
 					//grid[i].materials[0].setRGB(Math.round(255-scaley) ,Math.round(255-scaley), Math.round(255-scaley));
