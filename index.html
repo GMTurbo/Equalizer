@@ -2,7 +2,7 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<title>Voxels liquid</title>
+		<title>Three.js Equalizer</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
@@ -99,12 +99,12 @@
 				stats.domElement.style.top = '0px';
 				// container.appendChild( stats.domElement );
 
-				for ( var i = 0, l = res * 1; i < l; i ++ ) {
-
-					buffer1[ i ] = 0;
-					buffer2[ i ] = 0;
-
-				}
+				// for ( var i = 0, l = res * 1; i < l; i ++ ) {
+				// 
+				// 					buffer1[ i ] = 0;
+				// 					buffer2[ i ] = 0;
+				// 
+				// 				}
 
 				scene = new THREE.Scene();
 
@@ -118,9 +118,10 @@
 				scene.add( new THREE.AmbientLight( 0x808080 ) );
 
 				light = new THREE.SpotLight( 0xffffff, 1.25 );
-				light.position.set( - 500, 900, 600 );
-				light.target.position.set( halfsizeres, 0, halfsizeres );
+				light.position.set( res*10/2, 0, 1250 );
+				//light.target.position.set( halfsizeres, 0, halfsizeres );
 				//light.castShadow = true;
+				
 				scene.add( light );
 
 				geometry = new THREE.CubeGeometry( size, size, size );
@@ -130,10 +131,10 @@
 				for ( var i = 0, l = res * 1; i < l; i ++ ) {
 					
 					material = new THREE.MeshLambertMaterial( { color: 0xffffff} );
-					material.color.setHSV((l-i)/res, (l-i)/res, (l-i)/res);
+					material.color.setHSV((1.13*l-i)/res, (1.13*l-i)/res, (1.13*l-i)/res);
 					cube = new THREE.Mesh( new THREE.CubeGeometry( size, 2, size ), material );
-					cube.position.x = size + ( ( i % res ) * 10 );
-					cube.position.x = i * 10;
+					//cube.position.x = size + ( ( i % res ) * 10 );
+					cube.position.x = i * 10 + 10;
 					//cube.position.z = size + ( Math.floor( i / res ) * 10 );
 					//cube.castShadow = true;
 					//cube.receiveShadow = true;
@@ -146,7 +147,7 @@
 				for ( var i = 0, l = res * 1; i < l; i ++ ) {
 					
 					material = new THREE.MeshLambertMaterial( { color: 0xffffff} );
-					material.color.setHSV((l-i)/res, (l-i)/res, (l-i)/res);
+					material.color.setHSV((1.13*l-i)/res, (1.13*l-i)/res, (1.13*l-i)/res);
 					cube = new THREE.Mesh( geometry, material );
 					cube.position.x = size + ( ( i % res ) * 10 );
 					cube.position.x = i * 10;
@@ -159,14 +160,18 @@
 
 				}
 
-				geometry = new THREE.PlaneGeometry( sizeres, sizeres );
+				geometry = new THREE.PlaneGeometry( 2*sizeres, 2*sizeres );
 
-				plane = new THREE.Mesh( geometry, material );
+				plane = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xffffff} ));
 				plane.position.x = halfsizeres;
-				plane.position.z = halfsizeres;
+				plane.position.z = 0;
 				plane.rotation.x = - 90 * Math.PI / 180;
 				plane.visible = false;
+				plane.receiveShadow=true;
+				//plane.lookAt(camera);
 				scene.add( plane );
+				
+				//light.lookAt(plane);
 
 				renderer = new THREE.WebGLRenderer();
 				renderer.setSize( window.innerWidth, window.innerHeight );
@@ -261,22 +266,29 @@
 					}
 				}
 				
-				for ( var i = 0; i < bufferSize; i++ ) {
+				for ( var i = 0; i < grid.length; i++ ) {
 				//equalize, attenuates low freqs and boosts highs
 					if ( peak[i] < fft.spectrum[i]*1000 ) {
 						peak[i] = fft.spectrum[i]*1000;
 					}else {
 						peak[i] *= 0.99; // peak slowly falls until a new peak is found
 					}
-				}
-				
-				for(var i in peakMeshes){
+					
 					peakMeshes[i].position.y = peak[i]*10;
 				}
+				
+				//for(var i in peakMeshes){
+				//	peakMeshes[i].position.y = peak[i]*10;
+				//}
 			}
 	
 			function render() {
-
+				
+				//light.position.set( camera.position.x, camera.position.y, camera.position.z );
+				
+				var position = grid[Math.floor(grid.length/2)].position;
+				light.target.position.set( position.x, 100, position.z );
+				//light.lookAt(grid[Math.floor(grid.length/2)].position);
 				renderer.render( scene, camera );
 
 			}
