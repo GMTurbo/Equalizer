@@ -251,46 +251,30 @@
 			function analyze(framebuffer) {
 				// calculate peak values
 				if(!audio.paused){
-					var max = 1e-1;
-					for ( var i = 0; i < bufferSize; i++ ) {
-					//equalize, attenuates low freqs and boosts highs
-						if ( peak[i] < fft.spectrum[i]*1000 ) {
-							peak[i] = fft.spectrum[i]*1000;
-						}else {
-							peak[i] *= 0.99; // peak slowly falls until a new peak is found
-						}
-					}
-					for(var i in peakMeshes){
-						peakMeshes[i].position.y = peak[i]*10;
-					}
 					for(var i in grid){
 					
 						scaley = 255*fft.spectrum[i];
 						scaley = Math.min(scaley, 255);
 						scaley = Math.max(scaley, 0);
 						grid[i].scale.y = fft.spectrum[i] != 0 ? fft.spectrum[i]* 1000: 1;
-						//colorh = colorToHex('rgb('+Math.floor(50*scaley)+', '+ 128 +', '+ Math.floor(100*scaley) + ')');
-						//grid[i].materials[0].color.setHex(colorh);
-						//grid[i].materials[0] = new THREE.MeshLambertMaterial( { color: Math.random()*0xffffff } );
-						//grid[i].materials[0].setRGB(Math.round(255-scaley) ,Math.round(255-scaley), Math.round(255-scaley));
+						
 					}
 				}
+				
+				for ( var i = 0; i < bufferSize; i++ ) {
+				//equalize, attenuates low freqs and boosts highs
+					if ( peak[i] < fft.spectrum[i]*1000 ) {
+						peak[i] = fft.spectrum[i]*1000;
+					}else {
+						peak[i] *= 0.99; // peak slowly falls until a new peak is found
+					}
+				}
+				
+				for(var i in peakMeshes){
+					peakMeshes[i].position.y = peak[i]*10;
+				}
 			}
-			
-			function colorToHex(color) {
-			    if (color.substr(0, 1) === '#') {
-			        return color;
-			    }
-			    var digits = /(.*?)rgb\((\d+), (\d+), (\d+)\)/.exec(color);
-
-			    var red = parseInt(digits[2]);
-			    var green = parseInt(digits[3]);
-			    var blue = parseInt(digits[4]);
-
-			    var rgb = blue | (green << 8) | (red << 16);
-			    return '0x' + rgb.toString(16);
-			};
-			
+	
 			function render() {
 
 				renderer.render( scene, camera );
