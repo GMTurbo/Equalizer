@@ -23,7 +23,7 @@
 	</head>
 	<body>
 
-		<audio id="main-audio" src="Revolve.ogg" controls="true" onplay = "animate()" style="width:512px;">
+		<audio id="main-audio" src="VeridisQuo3.ogg" controls="true" onplay = "animate()" style="width:512px;">
 						</audio>
 		<script src="js/Detector.js"></script>
 		<script src="js/RequestAnimationFrame.js"></script>
@@ -35,61 +35,44 @@
 		<script>
 		
 			var audio,
-									    audioOutput,
-									    frameSize = 2048,
-									    bufferSize = frameSize / 2,
-									    sampleRate = 44100,
-									    signal = new Float32Array(bufferSize),
-									    peak = new Float32Array(bufferSize),
-									    fft = new FFT(bufferSize, sampleRate),
-									    m_BeatCounter = 0,
-									    m_BeatTimer = 0,
-									    clearClr = [0,0,1],
-									    ftimer = 0,
-									    cut, res;
+				audioOutput,
+				frameSize = 2048,
+				bufferSize = frameSize / 2,
+				sampleRate = 44100,
+				signal = new Float32Array(bufferSize),
+				peak = new Float32Array(bufferSize),
+				fft = new FFT(bufferSize, sampleRate),
+				m_BeatCounter = 0,
+				m_BeatTimer = 0,
+				clearClr = [0,0,1],
+				ftimer = 0,
+				cut, res;
 			
-										audio = document.getElementById('main-audio');
-										      audio.addEventListener('MozAudioAvailable', audioAvailable, false);
+			audio = document.getElementById('main-audio');
+			audio.addEventListener('MozAudioAvailable', audioAvailable, false);
 
-										      function audioAvailable(event) {
-										        var frameBuffer = event.frameBuffer;
-										        timestamp = event.time;
+			function audioAvailable(event) {
+				var frameBuffer = event.frameBuffer;
+				timestamp = event.time;
 
-										        // de-interleave and mix down to mono
-										        signal = DSP.getChannel(DSP.MIX, frameBuffer);
+		        // de-interleave and mix down to mono
+				signal = DSP.getChannel(DSP.MIX, frameBuffer);
 
-										        if (audioOutput instanceof Audio) { // write out to the filter
-										          //lp12.process(signal); // apply LP12 Filter
-										          audioOutput.mozWriteAudio(signal);
-										        }
+				if (audioOutput instanceof Audio) { // write out to the filter
+					lp12.process(signal); // apply LP12 Filter
+					audioOutput.mozWriteAudio(signal);
+				}
 
-										        // perform forward transform
-										        fft.forward(signal);
+				//perform forward transform
+				fft.forward(signal);
 
-										        // beat detection
-										        //bd.process( timestamp, fft.spectrum );
-
-										        //if (bd.win_bpm_int_lo) {
-										        //  m_BeatTimer += bd.last_update;
-
-										        //  if (m_BeatTimer > (60.0/bd.win_bpm_int_lo)) {
-										        //    m_BeatTimer -= (60.0/bd.win_bpm_int_lo);
-										        //    clearClr[0] = 0.5+Math.random()/2;
-										        //    clearClr[1] = 0.5+Math.random()/2;
-										        //    clearClr[2] = 0.5+Math.random()/2;
-										       //     m_BeatCounter++;
-										       //   }
-										       // }
-
-										        //ftimer += bd.last_update;
-
-										        analyze(event.frameBuffer);
+				analyze(event.frameBuffer);
 										        
-										      }
+			}
 										
 			var size = 10, res = 150, sizeres = size * res, halfsizeres = sizeres / 2;
 			var buffer1 = [], buffer2 = [], temp;
-			var grid = [], plane;
+			var grid = [], plane, peakMeshes = [];
 			var scene, camera, light, renderer;
 			var geometry, material;
 			var mouse, projector, ray, intersects = [];
@@ -128,7 +111,7 @@
 				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 2000 );
 				camera.position.x = 100;
 				camera.position.y = 200;
-				camera.position.z = 100;
+				camera.position.z = 1000;
 				camera.lookAt( new THREE.Vector3( halfsizeres, 0, halfsizeres ) );
 				scene.add( camera );
 
@@ -137,21 +120,39 @@
 				light = new THREE.SpotLight( 0xffffff, 1.25 );
 				light.position.set( - 500, 900, 600 );
 				light.target.position.set( halfsizeres, 0, halfsizeres );
-				light.castShadow = true;
+				//light.castShadow = true;
 				scene.add( light );
 
 				geometry = new THREE.CubeGeometry( size, size, size );
 				geometry.applyMatrix( new THREE.Matrix4().setTranslation( 0, size / 2, 0 ) );
-				material = new THREE.MeshLambertMaterial( { color: 0xd0d0d0 } );
+				//material = new THREE.MeshLambertMaterial( { color: 0xd0d0d0 } );
 
 				for ( var i = 0, l = res * 1; i < l; i ++ ) {
+					
+					material = new THREE.MeshLambertMaterial( { color: 0xffffff} );
+					material.color.setHSV((l-i)/res, (l-i)/res, (l-i)/res);
+					cube = new THREE.Mesh( new THREE.CubeGeometry( size, 2, size ), material );
+					cube.position.x = size + ( ( i % res ) * 10 );
+					cube.position.x = i * 10;
+					//cube.position.z = size + ( Math.floor( i / res ) * 10 );
+					//cube.castShadow = true;
+					//cube.receiveShadow = true;
+					scene.add( cube );
 
+					peakMeshes.push( cube );
+
+				}
+				
+				for ( var i = 0, l = res * 1; i < l; i ++ ) {
+					
+					material = new THREE.MeshLambertMaterial( { color: 0xffffff} );
+					material.color.setHSV((l-i)/res, (l-i)/res, (l-i)/res);
 					cube = new THREE.Mesh( geometry, material );
 					cube.position.x = size + ( ( i % res ) * 10 );
 					cube.position.x = i * 10;
 					//cube.position.z = size + ( Math.floor( i / res ) * 10 );
-					cube.castShadow = true;
-					cube.receiveShadow = true;
+					//cube.castShadow = true;
+					//cube.receiveShadow = true;
 					scene.add( cube );
 
 					grid.push( cube );
@@ -189,8 +190,37 @@
 				ray = new THREE.Ray( camera.position );
 
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				window.addEventListener( 'DOMMouseScroll',  wheel,  false);
 
 			}
+			
+			function wheel(event){
+			        var delta = 0;
+			        if (!event) /* For IE. */
+			                event = window.event;
+			        if (event.wheelDelta) { /* IE/Opera. */
+			                delta = event.wheelDelta/120;
+			        } else if (event.detail) { /** Mozilla case. */
+			                /** In Mozilla, sign of delta is different than in IE.
+			                 * Also, delta is multiple of 3.
+			                 */
+			                delta = -event.detail/3;
+			        }
+			        /** If delta is nonzero, handle it.
+			         * Basically, delta is now positive if wheel was scrolled up,
+			         * and negative, if wheel was scrolled down.
+			         */
+			        if (delta)
+			                camera.position.z += delta*10;
+			        /** Prevent default actions caused by mouse wheel.
+			         * That might be ugly, but we handle scrolls somehow
+			         * anyway, so don't bother here..
+			         */
+			        if (event.preventDefault)
+			                event.preventDefault();
+				event.returnValue = false;
+			}
+
 
 			function onDocumentMouseMove( event ) {
 
@@ -202,8 +232,8 @@
 
 				intersects = ray.intersectObject( plane );
 				
-				camera.position.x = 500 * Math.sin( mouse.x*2 * Math.PI / 360 ) + 700;
-				camera.position.z = 500 * Math.cos( mouse.y*2 * Math.PI / 360 ) + 400;
+				camera.position.x = 1500 * Math.sin( mouse.x*20 * Math.PI / 360 ) + 700;
+				//camera.position.z = 500 * Math.cos( mouse.y*20 * Math.PI / 360 ) + 400;
 				camera.lookAt(grid[Math.floor(grid.length/2)]);
 
 			}
@@ -222,27 +252,29 @@
 				// calculate peak values
 				if(!audio.paused){
 					var max = 1e-1;
-				for ( var i = 0; i < bufferSize; i++ ) {
-				//equalize, attenuates low freqs and boosts highs
-					if ( peak[i] < fft.spectrum[i] ) {
-						peak[i] = fft.spectrum[i];
-					}else {
-						peak[i] *= 0.99; // peak slowly falls until a new peak is found
+					for ( var i = 0; i < bufferSize; i++ ) {
+					//equalize, attenuates low freqs and boosts highs
+						if ( peak[i] < fft.spectrum[i]*1000 ) {
+							peak[i] = fft.spectrum[i]*1000;
+						}else {
+							peak[i] *= 0.99; // peak slowly falls until a new peak is found
+						}
+					}
+					for(var i in peakMeshes){
+						peakMeshes[i].position.y = peak[i]*10;
+					}
+					for(var i in grid){
+					
+						scaley = 255*fft.spectrum[i];
+						scaley = Math.min(scaley, 255);
+						scaley = Math.max(scaley, 0);
+						grid[i].scale.y = fft.spectrum[i] != 0 ? fft.spectrum[i]* 1000: 1;
+						//colorh = colorToHex('rgb('+Math.floor(50*scaley)+', '+ 128 +', '+ Math.floor(100*scaley) + ')');
+						//grid[i].materials[0].color.setHex(colorh);
+						//grid[i].materials[0] = new THREE.MeshLambertMaterial( { color: Math.random()*0xffffff } );
+						//grid[i].materials[0].setRGB(Math.round(255-scaley) ,Math.round(255-scaley), Math.round(255-scaley));
 					}
 				}
-				
-				for(var i in grid){
-					
-					scaley = 255*fft.spectrum[i*2];
-					scaley = Math.min(scaley, 255);
-					scaley = Math.max(scaley, 0);
-					grid[i].scale.y = fft.spectrum[i*2] != 0 ? fft.spectrum[i*2]* 1000: 1;
-					colorh = colorToHex('rgb('+Math.floor(50*scaley)+', '+ 128 +', '+ Math.floor(100*scaley) + ')');
-					grid[i].materials[0].color.setHex(colorh);
-					//grid[i].materials[0] = new THREE.MeshLambertMaterial( { color: Math.random()*0xffffff } );
-					//grid[i].materials[0].setRGB(Math.round(255-scaley) ,Math.round(255-scaley), Math.round(255-scaley));
-				}
-			}
 			}
 			
 			function colorToHex(color) {
