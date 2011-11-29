@@ -23,7 +23,7 @@
 	</head>
 	<body>
 
-		<audio id="main-audio" src="Revolve.ogg" controls="true" onplay = "animate()" style="width:512px; height:30px; left:50%;">
+		<audio id="main-audio" src="chad.ogg" controls="true" onplay = "animate()" style="width:512px; height:30px; position:absolute; left:30%;">
 						</audio>
 		<script src="js/Detector.js"></script>
 		<script src="js/RequestAnimationFrame.js"></script>
@@ -73,7 +73,7 @@
 										        
 			}
 										
-			var size = 10, res = 100, sizeres = size * res, halfsizeres = sizeres / 2;
+			var size = 15, res = 100, sizeres = size * res, halfsizeres = sizeres / 2;
 			var buffer1 = [], buffer2 = [], temp;
 			var grid = [], plane, peakMeshes = [];
 			var scene, camera, light, renderer;
@@ -85,7 +85,7 @@
 			
 			var guiSettings;
 			
-			var step = 2;
+			var step = 1;
 
 			if ( Detector.webgl ) {
 
@@ -108,7 +108,7 @@
 				stats = new Stats();
 				stats.domElement.style.position = 'absolute';
 				stats.domElement.style.top = '0px';
-				// container.appendChild( stats.domElement );
+				container.appendChild( stats.domElement );
 
 				scene = new THREE.Scene();
 
@@ -142,9 +142,7 @@
 					material = new THREE.MeshPhongMaterial( { ambient: 0x050505, color: 0xffffff, specular: 0x555555, shininess: 30 } )
 					material.color.setHSV((1.13*l-i)/res, (1.13*l-i)/res, (1.13*l-i)/res);
 					cube = new THREE.Mesh( new THREE.CubeGeometry( size, 2, size ), material );
-					//cube.position.x = size + ( ( i % res ) * 10 );
-					cube.position.x = i * 10 + 10;
-					//cube.position.z = size + ( Math.floor( i / res ) * 10 );
+					cube.position.x = size + ( ( i % res ) * size );
 					cube.castShadow = true;
 					//cube.receiveShadow = true;
 					scene.add( cube );
@@ -159,9 +157,7 @@
 					material = new THREE.MeshPhongMaterial( { ambient: 0x050505, color: 0xffffff, specular: 0x555555, shininess: 30 } )
 					material.color.setHSV((1.13*l-i)/res, (1.13*l-i)/res, (1.13*l-i)/res);
 					cube = new THREE.Mesh( geometry, material );
-					//cube.position.x = size + ( ( i % res ) * 10 );
-					cube.position.x = i * 10 + 10;
-					//cube.position.z = size + ( Math.floor( i / res ) * 10 );
+					cube.position.x = size + ( ( i % res ) * size );
 					cube.castShadow = true;
 					//cube.receiveShadow = true;
 					scene.add( cube );
@@ -221,10 +217,12 @@
 				gui = new GUI();
 				gui.autoplace = true;
 				guiSettings = {
-					track: 0
+					track: 3,
+					step: 1,
+					orbitCamera: true
 				};
 				
-				gui.add(guiSettings, 'track').options({'Revolve.ogg': 0, 'VQ.ogg': 1, 'FilterFade.ogg': 2 }).onChange(function(newVal){
+				gui.add(guiSettings, 'track').options({'Revolve.ogg': 0, 'VQ.ogg': 1, 'FilterFade.ogg': 2, 'michael.ogg': 3, 'Biggie.ogg': 4 }).onChange(function(newVal){
 					
 					switch(newVal){
 						case 0:
@@ -251,10 +249,30 @@
 							audio.play();
 						}
 						break;
+						case 3:
+						if(audio.src.indexOf('michael') === -1){
+							audio.pause();
+							fft = new FFT(bufferSize, sampleRate),
+							audio.src = 'michael.ogg';
+							audio.play();
+						}
+						break;
+						case 4:
+						if(audio.src.indexOf('Biggie') === -1){
+							audio.pause();
+							fft = new FFT(bufferSize, sampleRate),
+							audio.src = 'Biggie.ogg';
+							audio.play();
+						}
+						break;
 					}
 				
 				});
 				
+				gui.add(guiSettings, 'step').options({'1': 1, '2': 2, '3': 3, '4': 4, '5': 5 });
+				
+				gui.add(guiSettings, 'orbitCamera');
+		
 				
 			}
 			
@@ -325,20 +343,19 @@
 				if(!audio.paused){
 					for(var i in grid){
 			
-						grid[i].scale.y = fft.spectrum[i*step] != 0 ? fft.spectrum[i*step]* 1000: 1;
+						grid[i].scale.y = fft.spectrum[i*guiSettings.step] != 0 ? fft.spectrum[i*guiSettings.step]* 1000: 1;
 						
 					}
 				}
 				
-				for ( var i = 0; i < grid.length; i++ ) {
+				for ( var i = 0; i < peakMeshes.length; i++ ) {
 				//equalize, attenuates low freqs and boosts highs
-					if ( peak[i] < fft.spectrum[i*step]*1000 ) {
-						peak[i] = fft.spectrum[i*step]*1000;
-					}else {
+					 if ( peak[i] < fft.spectrum[i*guiSettings.step]*1000 ) {
+						peak[i] = fft.spectrum[i*guiSettings.step]*1000;
+					 }else {
 						peak[i] *= 0.99; // peak slowly falls until a new peak is found
 					}
-					
-					peakMeshes[i].position.y = peak[i]*10;
+					peakMeshes[i].position.y = peak[i]*size;
 				}
 			}
 			
@@ -382,23 +399,28 @@
 					if(timestep2 > 360) timestep2 = 0;
 					
 					stepLight = {
-						x : 600*Math.cos(timestep*Math.PI/180) + 500, 
-						y : 300*Math.cos(timestep*Math.PI/180)*Math.sin(timestep*Math.PI/180) + 400, 
-						z : 700*Math.sin(timestep*Math.PI/180) + 50 
+						x : 60*size*Math.cos(timestep*Math.PI/180) + 500, 
+						y : 30*size*Math.cos(timestep*Math.PI/180)*Math.sin(timestep*Math.PI/180) + 400, 
+						z : 70*size*Math.sin(timestep*Math.PI/180) + 50 
 					};
 					
 					stepCamera = {
-						x : 600*Math.cos(timestep2*Math.PI/180) + 500, 
-						y : 300*Math.cos(timestep2*Math.PI/180)*Math.sin(timestep2*Math.PI/180) + 400, 
-						z : 700*Math.sin(timestep2*Math.PI/180)  
+						x : 60*size*Math.cos(timestep2*Math.PI/180) + 500, 
+						y : 30*size*Math.cos(timestep2*Math.PI/180)*Math.sin(timestep2*Math.PI/180) + 400, 
+						z : 70*size*Math.sin(timestep2*Math.PI/180)  
 					};
 						
-					light.position.set( stepLight.x, stepLight.y , stepLight.z);
-					lightBall.position.set(light.position.x,light.position.y,light.position.z);
-					camera.position.set(stepCamera.x, stepCamera.y, stepCamera.z);
+					if(guiSettings.orbitCamera){
+						light.position.set( stepLight.x, stepLight.y , stepLight.z);
+						lightBall.position.set(light.position.x,light.position.y,light.position.z);
 					
-					position = grid[Math.floor(grid.length/2)].position;
-					camera.lookAt(new THREE.Vector3(position.x, 100, position.z));
+					
+						camera.position.set(stepCamera.x, stepCamera.y, stepCamera.z);
+					
+						position = grid[Math.floor(grid.length/2)].position;
+						camera.lookAt(new THREE.Vector3(position.x, 100, position.z));
+					}
+					
 					renderer.render( scene, camera );
 				}
 			}
