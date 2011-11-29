@@ -23,7 +23,7 @@
 	</head>
 	<body>
 
-		<audio id="main-audio" src="VeridisQuo3.ogg" controls="true" onplay = "animate()" style="width:512px;">
+		<audio id="main-audio" src="Revolve.ogg" controls="true" onplay = "animate()" style="width:512px;">
 						</audio>
 		<script src="js/Detector.js"></script>
 		<script src="js/RequestAnimationFrame.js"></script>
@@ -70,13 +70,17 @@
 										        
 			}
 										
-			var size = 10, res = 150, sizeres = size * res, halfsizeres = sizeres / 2;
+			var size = 10, res = 100, sizeres = size * res, halfsizeres = sizeres / 2;
 			var buffer1 = [], buffer2 = [], temp;
 			var grid = [], plane, peakMeshes = [];
 			var scene, camera, light, renderer;
 			var geometry, material;
 			var mouse, projector, ray, intersects = [];
 			var stats;
+			
+			var lightBall = null;
+			
+			var step = 2;
 
 			if ( Detector.webgl ) {
 
@@ -99,16 +103,9 @@
 				stats.domElement.style.top = '0px';
 				// container.appendChild( stats.domElement );
 
-				// for ( var i = 0, l = res * 1; i < l; i ++ ) {
-				// 
-				// 					buffer1[ i ] = 0;
-				// 					buffer2[ i ] = 0;
-				// 
-				// 				}
-
 				scene = new THREE.Scene();
 
-				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 4000 );
 				camera.position.x = 100;
 				camera.position.y = 200;
 				camera.position.z = 1000;
@@ -116,11 +113,14 @@
 				scene.add( camera );
 
 				scene.add( new THREE.AmbientLight( 0x808080 ) );
-
-				light = new THREE.SpotLight( 0xffffff, 1.25 );
-				light.position.set( res*10/2, 0, 1250 );
+				
+				lightBall = new THREE.Mesh(new THREE.SphereGeometry(10,10,10), new THREE.MeshLambertMaterial( { color: 0x4694C8} ));
+				scene.add(lightBall);
+				
+				light = new THREE.SpotLight( 0xffffff );
+				//light.position.set( res*10/2, 0, 1250 );
 				//light.target.position.set( halfsizeres, 0, halfsizeres );
-				//light.castShadow = true;
+				light.castShadow = true;
 				
 				scene.add( light );
 
@@ -130,13 +130,14 @@
 
 				for ( var i = 0, l = res * 1; i < l; i ++ ) {
 					
-					material = new THREE.MeshLambertMaterial( { color: 0xffffff} );
+					//material = new THREE.MeshLambertMaterial( { color: 0xffffff} );
+					material = new THREE.MeshPhongMaterial( { ambient: 0x050505, color: 0xffffff, specular: 0x555555, shininess: 30 } )
 					material.color.setHSV((1.13*l-i)/res, (1.13*l-i)/res, (1.13*l-i)/res);
 					cube = new THREE.Mesh( new THREE.CubeGeometry( size, 2, size ), material );
 					//cube.position.x = size + ( ( i % res ) * 10 );
 					cube.position.x = i * 10 + 10;
 					//cube.position.z = size + ( Math.floor( i / res ) * 10 );
-					//cube.castShadow = true;
+					cube.castShadow = true;
 					//cube.receiveShadow = true;
 					scene.add( cube );
 
@@ -146,13 +147,14 @@
 				
 				for ( var i = 0, l = res * 1; i < l; i ++ ) {
 					
-					material = new THREE.MeshLambertMaterial( { color: 0xffffff} );
+					//material = new THREE.MeshLambertMaterial( { color: 0xffffff} );
+					material = new THREE.MeshPhongMaterial( { ambient: 0x050505, color: 0xffffff, specular: 0x555555, shininess: 30 } )
 					material.color.setHSV((1.13*l-i)/res, (1.13*l-i)/res, (1.13*l-i)/res);
 					cube = new THREE.Mesh( geometry, material );
-					cube.position.x = size + ( ( i % res ) * 10 );
-					cube.position.x = i * 10;
+					//cube.position.x = size + ( ( i % res ) * 10 );
+					cube.position.x = i * 10 + 10;
 					//cube.position.z = size + ( Math.floor( i / res ) * 10 );
-					//cube.castShadow = true;
+					cube.castShadow = true;
 					//cube.receiveShadow = true;
 					scene.add( cube );
 
@@ -162,31 +164,38 @@
 
 				geometry = new THREE.PlaneGeometry( 2*sizeres, 2*sizeres );
 
-				plane = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xffffff} ));
+				plane = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xD6D3A7} ));
+				//plane = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial( { ambient: 0x050505, color: 0xD6D3A7, specular: 0x555555, shininess: 30 } ));
 				plane.position.x = halfsizeres;
 				plane.position.z = 0;
 				plane.rotation.x = - 90 * Math.PI / 180;
-				plane.visible = false;
+				plane.visible = true;
 				plane.receiveShadow=true;
 				//plane.lookAt(camera);
 				scene.add( plane );
 				
+				light.position.set( 500, 200, 300 );
+				lightBall.position.set(light.position.x, light.position.y, light.position.z);
+				
+				var position = grid[Math.floor(grid.length/2)].position;
+				light.target.position.set( 0, 0, 0 );
+				
 				//light.lookAt(plane);
 
-				renderer = new THREE.WebGLRenderer();
+				renderer = new THREE.WebGLRenderer( {antialias:"false"} );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
 				renderer.shadowMapEnabled = true;
 				renderer.shadowMapSoft = true;
-
-				renderer.shadowCameraNear = 3;
-				renderer.shadowCameraFar = camera.far;
-				renderer.shadowCameraFov = 50;
-
-				renderer.shadowMapBias = 0.0039;
+								
+				renderer.shadowCameraNear = 1;
+				renderer.shadowCameraFar = 4000;
+				//renderer.shadowCameraFov = 50;
+								
+				//renderer.shadowMapBias = 0.0039;
 				renderer.shadowMapDarkness = 0.5;
-				renderer.shadowMapWidth = 512;
-				renderer.shadowMapHeight = 512;
+				renderer.shadowMapWidth = sizeres;
+				renderer.shadowMapHeight = sizeres;
 
 				container.appendChild( renderer.domElement );
 
@@ -215,8 +224,12 @@
 			         * Basically, delta is now positive if wheel was scrolled up,
 			         * and negative, if wheel was scrolled down.
 			         */
-			        if (delta)
+			        if (delta){
 			                camera.position.z += delta*10;
+							camera.position.y += delta;
+							position = grid[Math.floor(grid.length/2)].position;
+							camera.lookAt(new THREE.Vector3(position.x, 100, position.z));
+					}
 			        /** Prevent default actions caused by mouse wheel.
 			         * That might be ugly, but we handle scrolls somehow
 			         * anyway, so don't bother here..
@@ -235,11 +248,16 @@
 				ray.direction = projector.unprojectVector( mouse.clone(), camera );
 				ray.direction.subSelf( camera.position ).normalize();
 
-				intersects = ray.intersectObject( plane );
+				intersects = ray.intersectScene( scene );
+				if(intersects){
+					//intersects[0].object.materials[0].color.setRGB(0,0,0);
+				}
 				
-				camera.position.x = 1500 * Math.sin( mouse.x*20 * Math.PI / 360 ) + 700;
-				//camera.position.z = 500 * Math.cos( mouse.y*20 * Math.PI / 360 ) + 400;
-				camera.lookAt(grid[Math.floor(grid.length/2)]);
+				camera.position.x = 1500 * Math.sin( mouse.x*20 * Math.PI / 360 ) + 500;
+				camera.position.y = 500 * Math.cos( mouse.y*20 * Math.PI / 360 ) + 400;
+				
+				position = grid[Math.floor(grid.length/2)].position;
+				camera.lookAt(new THREE.Vector3(position.x, 100, position.z));
 
 			}
 
@@ -247,7 +265,6 @@
 
 				requestAnimationFrame( animate );
 
-				analyze();
 				render();
 				stats.update();
 
@@ -257,40 +274,83 @@
 				// calculate peak values
 				if(!audio.paused){
 					for(var i in grid){
-					
-						scaley = 255*fft.spectrum[i];
-						scaley = Math.min(scaley, 255);
-						scaley = Math.max(scaley, 0);
-						grid[i].scale.y = fft.spectrum[i] != 0 ? fft.spectrum[i]* 1000: 1;
+			
+						grid[i].scale.y = fft.spectrum[i*step] != 0 ? fft.spectrum[i*step]* 1000: 1;
 						
 					}
 				}
 				
 				for ( var i = 0; i < grid.length; i++ ) {
 				//equalize, attenuates low freqs and boosts highs
-					if ( peak[i] < fft.spectrum[i]*1000 ) {
-						peak[i] = fft.spectrum[i]*1000;
+					if ( peak[i] < fft.spectrum[i*step]*1000 ) {
+						peak[i] = fft.spectrum[i*step]*1000;
 					}else {
 						peak[i] *= 0.99; // peak slowly falls until a new peak is found
 					}
 					
 					peakMeshes[i].position.y = peak[i]*10;
 				}
-				
-				//for(var i in peakMeshes){
-				//	peakMeshes[i].position.y = peak[i]*10;
-				//}
 			}
-	
-			function render() {
-				
-				//light.position.set( camera.position.x, camera.position.y, camera.position.z );
-				
-				var position = grid[Math.floor(grid.length/2)].position;
-				light.target.position.set( position.x, 100, position.z );
-				//light.lookAt(grid[Math.floor(grid.length/2)].position);
-				renderer.render( scene, camera );
+			
+			function HandlePeaks(){
+				for ( var i = 0; i < grid.length; i++ ) {
+				//equalize, attenuates low freqs and boosts highs
+					if ( peak[i] < fft.spectrum[i*step]*1000 ) {
+						peak[i] = fft.spectrum[i*step]*1000;
+					}else {
+						peak[i] *= 0.99; // peak slowly falls until a new peak is found
+					}
+					
+					peakMeshes[i].position.y = peak[i]*10;
+				}
+			}
+			
+			function build(framebuffer){
+				if(!audio.paused){
+					geometry = new THREE.CubeGeometry( size, size, size );
+					for ( var i = 0, l = res * 1; i < l; i ++ ) {
+					
+						material = new THREE.MeshLambertMaterial( { color: 0xffffff} );
+						material.color.setHSV((1.13*l-i)/res, (1.13*l-i)/res, (1.13*l-i)/res);
+						cube = new THREE.Mesh( geometry, material );
+						//cube.position.x = size + ( ( i % res ) * 10 );
+						cube.scale.y = fft.spectrum[i*step] != 0 ? fft.spectrum[i*step]* 1000: 1;
+						cube.position.x = size + ( ( i % res ) * 10 );
+						cube.position.z = size + ( Math.floor( i / res ) * 10 );
+						//cube.castShadow = true;
+						//cube.receiveShadow = true;
+						scene.add( cube );
 
+					}
+				}
+			}
+			var timestep = 0, timestep2 = 0;
+			function render() {
+				if(!audio.paused){
+					timestep+=0.25; timestep2 += 0.25;
+					if(timestep > 360) timestep = 0;
+					if(timestep2 > 360) timestep2 = 0;
+					
+					stepLight = {
+						x : 600*Math.cos(timestep*Math.PI/180) + 500, 
+						y : 300*Math.cos(timestep*Math.PI/180)*Math.sin(timestep*Math.PI/180) + 400, 
+						z : 700*Math.sin(timestep*Math.PI/180) + 50 
+					};
+					
+					stepCamera = {
+						x : 600*Math.cos(timestep2*Math.PI/180) + 500, 
+						y : 300*Math.cos(timestep2*Math.PI/180)*Math.sin(timestep2*Math.PI/180) + 400, 
+						z : 700*Math.sin(timestep2*Math.PI/180)  
+					};
+						
+					light.position.set( stepLight.x, stepLight.y , stepLight.z);
+					lightBall.position.set(light.position.x,light.position.y,light.position.z);
+					camera.position.set(stepCamera.x, stepCamera.y, stepCamera.z);
+					
+					position = grid[Math.floor(grid.length/2)].position;
+					camera.lookAt(new THREE.Vector3(position.x, 100, position.z));
+					renderer.render( scene, camera );
+				}
 			}
 
 		</script>
