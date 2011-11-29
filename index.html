@@ -127,7 +127,7 @@
 				lightBall.visible = false;
 				scene.add(lightBall);
 				
-				light = new THREE.SpotLight( 0xffffff );
+				light = new THREE.SpotLight( 0xffffff, 1.5 );
 				//light.position.set( res*10/2, 0, 1250 );
 				//light.target.position.set( halfsizeres, 0, halfsizeres );
 				light.castShadow = true;
@@ -194,10 +194,10 @@
 				
 				//light.lookAt(plane);
 
-				renderer = new THREE.WebGLRenderer( {antialias:"false"} );
+				renderer = new THREE.WebGLRenderer( {antialias:"true"} );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
-				renderer.shadowMapEnabled = true;
+				renderer.shadowMapEnabled = guiSettings.shadows;
 				renderer.shadowMapSoft = true;
 								
 				renderer.shadowCameraNear = 1;
@@ -228,7 +228,8 @@
 					track: 3,
 					step: 1,
 					orbitCamera: false,
-					colormap: false
+					colormap: false,
+					shadows: true
 				};
 				
 				gui.add(guiSettings, 'track').options({'Revolve.ogg': 0, 'VQ.ogg': 1, 'FilterFade.ogg': 2, 'michael.ogg': 3, 'Biggie.ogg': 4 }).onChange(function(newVal){
@@ -283,6 +284,10 @@
 				gui.add(guiSettings, 'colormap');
 				
 				gui.add(guiSettings, 'orbitCamera');
+				
+				gui.add(guiSettings, 'shadows').onChange(function(){
+					renderer.shadowMapEnabled = guiSettings.shadows;
+				});
 		
 				
 			}
@@ -361,7 +366,7 @@
 				          | ((((( a & MASK2 ) * f1 ) + ( ( b & MASK2 ) * f2 )) >> 8 ) & MASK2 );
 
 			}
-			var color1 = 0x00FF00, color2 = 0xFF0000;
+			var color1 = 0xCCFF00, color2 = 0xFF0048;
 			
 			function analyze(framebuffer) {
 				
@@ -377,7 +382,8 @@
 					if(maxPeak < peak[i]*1000){
 						maxPeak = peak[i]*1000;
 					}
-					peakMeshes[i].position.y = peak[i]*size;
+					peakMeshes[i].position.y = Math.min(peak[i]*size, 40*size);
+					//peakMeshes[i].position.y = peak[i]*size;
 				}
 				
 				var percent = 0;
@@ -417,26 +423,26 @@
 				}
 			}
 			
-			function build(framebuffer){
-				if(!audio.paused){
-					geometry = new THREE.CubeGeometry( size, size, size );
-					for ( var i = 0, l = res * 1; i < l; i ++ ) {
-					
-						material = new THREE.MeshLambertMaterial( { color: 0xffffff} );
-						material.color.setHSV((1.13*l-i)/res, (1.13*l-i)/res, (1.13*l-i)/res);
-						cube = new THREE.Mesh( geometry, material );
-						//cube.position.x = size + ( ( i % res ) * 10 );
-						cube.scale.y = fft.spectrum[i*step] != 0 ? fft.spectrum[i*step]* 1000: 1;
-						
-						cube.position.x = size + ( ( i % res ) * 10 );
-						cube.position.z = size + ( Math.floor( i / res ) * 10 );
-						//cube.castShadow = true;
-						//cube.receiveShadow = true;
-						scene.add( cube );
-
-					}
-				}
-			}
+			// function build(framebuffer){
+			// 				if(!audio.paused){
+			// 					geometry = new THREE.CubeGeometry( size, size, size );
+			// 					for ( var i = 0, l = res * 1; i < l; i ++ ) {
+			// 					
+			// 						material = new THREE.MeshLambertMaterial( { color: 0xffffff} );
+			// 						material.color.setHSV((1.13*l-i)/res, (1.13*l-i)/res, (1.13*l-i)/res);
+			// 						cube = new THREE.Mesh( geometry, material );
+			// 						//cube.position.x = size + ( ( i % res ) * 10 );
+			// 						cube.scale.y = fft.spectrum[i*step] != 0 ? fft.spectrum[i*step]* 1000: 1;
+			// 						
+			// 						cube.position.x = size + ( ( i % res ) * 10 );
+			// 						cube.position.z = size + ( Math.floor( i / res ) * 10 );
+			// 						//cube.castShadow = true;
+			// 						//cube.receiveShadow = true;
+			// 						scene.add( cube );
+			// 
+			// 					}
+			// 				}
+			// 			}
 			var timestep = 0, timestep2 = 0;
 			function render() {
 				if(!audio.paused){
