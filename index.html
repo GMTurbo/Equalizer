@@ -23,7 +23,7 @@
 	</head>
 	<body>
 
-		<audio id="main-audio" src="Revolve.ogg" controls="true" onplay = "animate()" style="width:512px;">
+		<audio id="main-audio" src="Revolve.ogg" controls="true" onplay = "animate()" style="width:512px; height:30px; left:50%;">
 						</audio>
 		<script src="js/Detector.js"></script>
 		<script src="js/RequestAnimationFrame.js"></script>
@@ -31,6 +31,9 @@
 		<script src="js/Three.js"></script>
 		<script src="js/beatdetektor.js"></script>
 		<script src="js/dsp.js"></script>
+		
+		<link href="js/gui/gui.css" media="screen" rel="stylesheet" type="text/css" />
+		<script src="js/gui/gui.min.js"></script>
 
 		<script>
 		
@@ -80,6 +83,8 @@
 			
 			var lightBall = null;
 			
+			var guiSettings;
+			
 			var step = 2;
 
 			if ( Detector.webgl ) {
@@ -97,6 +102,8 @@
 
 				var container = document.createElement( 'div' );
 				document.body.appendChild( container );
+				
+				setupGUI();
 
 				stats = new Stats();
 				stats.domElement.style.position = 'absolute';
@@ -115,6 +122,7 @@
 				scene.add( new THREE.AmbientLight( 0x808080 ) );
 				
 				lightBall = new THREE.Mesh(new THREE.SphereGeometry(10,10,10), new THREE.MeshLambertMaterial( { color: 0x4694C8} ));
+				lightBall.visible = false;
 				scene.add(lightBall);
 				
 				light = new THREE.SpotLight( 0xffffff );
@@ -206,6 +214,48 @@
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 				window.addEventListener( 'DOMMouseScroll',  wheel,  false);
 
+			}
+			
+			function setupGUI(){
+				
+				gui = new GUI();
+				gui.autoplace = true;
+				guiSettings = {
+					track: 0
+				};
+				
+				gui.add(guiSettings, 'track').options({'Revolve.ogg': 0, 'VQ.ogg': 1, 'FilterFade.ogg': 2 }).onChange(function(newVal){
+					
+					switch(newVal){
+						case 0:
+						if(audio.src.indexOf('Revolve') === -1){
+							audio.pause();
+							fft = new FFT(bufferSize, sampleRate),
+							audio.src = 'Revolve.ogg';
+							audio.play();
+						}
+						break;
+						case 1:
+						if(audio.src.indexOf('VQ') === -1){
+							audio.pause();
+							fft = new FFT(bufferSize, sampleRate),
+							audio.src = 'VQ.ogg';
+							audio.play();
+						}
+						break;
+						case 2:
+						if(audio.src.indexOf('FilterFade') === -1){
+							audio.pause();
+							fft = new FFT(bufferSize, sampleRate),
+							audio.src = 'FilterFade.ogg';
+							audio.play();
+						}
+						break;
+					}
+				
+				});
+				
+				
 			}
 			
 			function wheel(event){
