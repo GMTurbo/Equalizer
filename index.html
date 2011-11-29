@@ -67,9 +67,11 @@
 				}
 
 				//perform forward transform
-				fft.forward(signal);
+				if(!audio.paused){
+					fft.forward(signal);
 
-				analyze(event.frameBuffer);
+					analyze(event.frameBuffer);
+				}
 										        
 			}
 										
@@ -78,7 +80,7 @@
 			var grid = [], plane, peakMeshes = [];
 			var scene, camera, light, renderer;
 			var geometry, material;
-			var mouse, projector, ray, intersects = [];
+			var mouse, projector, ray, intersects = [], HSV = [];
 			var stats;
 			
 			var lightBall = null;
@@ -144,6 +146,7 @@
 					cube = new THREE.Mesh( new THREE.CubeGeometry( size, 2, size ), material );
 					cube.position.x = size + ( ( i % res ) * size );
 					cube.castShadow = true;
+					HSV.push((1.13*l-i)/res);
 					//cube.receiveShadow = true;
 					scene.add( cube );
 
@@ -219,7 +222,8 @@
 				guiSettings = {
 					track: 3,
 					step: 1,
-					orbitCamera: true
+					orbitCamera: true,
+					colormap: false
 				};
 				
 				gui.add(guiSettings, 'track').options({'Revolve.ogg': 0, 'VQ.ogg': 1, 'FilterFade.ogg': 2, 'michael.ogg': 3, 'Biggie.ogg': 4 }).onChange(function(newVal){
@@ -270,6 +274,8 @@
 				});
 				
 				gui.add(guiSettings, 'step').options({'1': 1, '2': 2, '3': 3, '4': 4, '5': 5 });
+				
+				gui.add(guiSettings, 'colormap');
 				
 				gui.add(guiSettings, 'orbitCamera');
 		
@@ -338,16 +344,24 @@
 
 			}
 			
-			function analyze(framebuffer) {
-				// calculate peak values
-				if(!audio.paused){
-					for(var i in grid){
+			function interpolateColorsCompact( a, b, Number )
+			{ 
+			   		var MASK1 = 0xff00ff; 
+				   var MASK2 = 0x00ff00; 
+
+				   var f2= Math.floor(256 * Number);
+				   var f1 = 256 - f2;
+
+				   return   ((((( a & MASK1 ) * f1 ) + ( ( b & MASK1 ) * f2 )) >> 8 ) & MASK1 ) 
+				          | ((((( a & MASK2 ) * f1 ) + ( ( b & MASK2 ) * f2 )) >> 8 ) & MASK2 );
+
+			}
+			var color1 = 0x69D2E7, color2 = 0xF38630;
 			
-						grid[i].scale.y = fft.spectrum[i*guiSettings.step] != 0 ? fft.spectrum[i*guiSettings.step]* 1000: 1;
-						
-					}
-				}
+			function analyze(framebuffer) {
 				
+				// calculate peak values
+				var maxPeak = 1e-6;
 				for ( var i = 0; i < peakMeshes.length; i++ ) {
 				//equalize, attenuates low freqs and boosts highs
 					 if ( peak[i] < fft.spectrum[i*guiSettings.step]*1000 ) {
@@ -355,7 +369,30 @@
 					 }else {
 						peak[i] *= 0.99; // peak slowly falls until a new peak is found
 					}
+					if(maxPeak < peak[i]*1000){
+						maxPeak = peak[i]*1000;
+					}
 					peakMeshes[i].position.y = peak[i]*size;
+				}
+				
+				var percent = 0;
+				
+				if(!audio.paused){
+					for(var i in grid){
+			
+						grid[i].scale.y = fft.spectrum[i*guiSettings.step] != 0 ? fft.spectrum[i*guiSettings.step]* 1000: 1;
+						percent = Math.min(1.0, (grid[i].scale.y * size)/1100);
+						percent = Math.max(0,percent);
+						//percent = fft.spectrum[i*guiSettings.step]/(maxPeak/1000);
+						if(guiSettings.colormap){
+							interpC = interpolateColorsCompact(color1, color2, percent)
+							grid[i].materials[0].color.setHex(interpC);
+							peakMeshes[i].materials[0].color.setHex(interpC);
+						}else{
+							grid[i].materials[0].color.setHex(0xffffff);
+						    grid[i].materials[0].color.setHSV(HSV[i], HSV[i], HSV[i]);
+						}
+					}
 				}
 			}
 			
