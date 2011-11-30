@@ -356,16 +356,17 @@
 			
 			function interpolateColorsCompact( a, b, Number )
 			{ 
-			   		var MASK1 = 0xff00ff; 
-				   var MASK2 = 0x00ff00; 
+			   	var MASK1 = 0xff00ff; 
+				var MASK2 = 0x00ff00; 
 
-				   var f2= Math.floor(256 * Number);
-				   var f1 = 256 - f2;
+				var f2= Math.floor(256 * Number);
+				var f1 = 256 - f2;
 
-				   return   ((((( a & MASK1 ) * f1 ) + ( ( b & MASK1 ) * f2 )) >> 8 ) & MASK1 ) 
-				          | ((((( a & MASK2 ) * f1 ) + ( ( b & MASK2 ) * f2 )) >> 8 ) & MASK2 );
+				return   ((((( a & MASK1 ) * f1 ) + ( ( b & MASK1 ) * f2 )) >> 8 ) & MASK1 ) 
+				         | ((((( a & MASK2 ) * f1 ) + ( ( b & MASK2 ) * f2 )) >> 8 ) & MASK2 );
 
 			}
+			
 			var color1 = 0xCCFF00, color2 = 0xFF0048;
 			
 			function analyze(framebuffer) {
@@ -395,7 +396,7 @@
 						grid[i].scale.y = Math.min(40, grid[i].scale.y);
 						percent = Math.min(1.0, (grid[i].scale.y * size)/600);
 						percent = Math.max(0,percent);
-						//percent = fft.spectrum[i*guiSettings.step]/(maxPeak/1000);
+						
 						if(guiSettings.colormap){
 							interpC = interpolateColorsCompact(color1, color2, percent)
 							grid[i].materials[0].color.setHex(interpC);
