@@ -23,7 +23,7 @@
 	</head>
 	<body>
 
-		<audio id="main-audio" src="ungirthed.ogg" controls="true" onplay = "animate()" style="width:512px; height:30px; position:absolute; left:30%;" autoplay="true">
+		<audio id="main-audio" src="chad.ogg" controls="true" onplay = "animate()" style="width:512px; height:30px; position:absolute; left:30%;" autoplay="true">
 						</audio>
 		<script src="js/Detector.js"></script>
 		<script src="js/RequestAnimationFrame.js"></script>
@@ -45,13 +45,11 @@
 				signal = new Float32Array(bufferSize),
 				peak = new Float32Array(bufferSize),
 				fft = new FFT(bufferSize, sampleRate),
-				bd = new BeatDetektor(60, 90),
-				vu = new BeatDetektor.modules.vis.VU(),
 				m_BeatCounter = 0,
 				m_BeatTimer = 0,
 				clearClr = [0,0,1],
 				ftimer = 0,
-				cut, res, signStep=0;
+				cut, res;
 			
 			audio = document.getElementById('main-audio');
 			audio.addEventListener('MozAudioAvailable', audioAvailable, false);
@@ -70,21 +68,6 @@
 
 				//perform forward transform
 				if(!audio.paused){
-					// beat detection
-					bd.process( timestamp, fft.spectrum );
-
-					if (bd.win_bpm_int_lo) {
-						m_BeatTimer += bd.last_update;
-
-						if (m_BeatTimer > (60.0/bd.win_bpm_int_lo)) {
-							m_BeatTimer -= (60.0/bd.win_bpm_int_lo);
-							//clearClr[0] = 0.5+Math.random()/2;
-							//clearClr[1] = 0.5+Math.random()/2;
-							//clearClr[2] = 0.5+Math.random()/2;
-							m_BeatCounter++;
-						}
-					}
-					
 					fft.forward(signal);
 
 					analyze(event.frameBuffer);
@@ -92,7 +75,7 @@
 										        
 			}
 										
-			var size = 15, res = 100, sizeres = size * res, halfsizeres = sizeres / 2;
+			var size = 15, res = 102, sizeres = size * res, halfsizeres = sizeres / 2;
 			var buffer1 = [], buffer2 = [], temp;
 			var grid = [], plane, peakMeshes = [];
 			var scene, camera, light, renderer;
@@ -387,17 +370,13 @@
 			var color1 = 0xCCFF00, color2 = 0xFF0048;
 			
 			function analyze(framebuffer) {
-				var speed = bd.win_bpm_int_lo;
+				
 				// calculate peak values
 				var maxPeak = 1e-6;
 				for ( var i = 0; i < peakMeshes.length; i++ ) {
-					var avg = 0;
-					for(var j = 0 ; j < 5 ; j++) {
-						avg+=fft.spectrum[i*5+j]/5;
-					}
 				//equalize, attenuates low freqs and boosts highs
-					 if ( peak[i] < avg *1000 ) {
-						peak[i] = avg*1000;
+					 if ( peak[i] < fft.spectrum[i*guiSettings.step]*1000 ) {
+						peak[i] = fft.spectrum[i*guiSettings.step]*1000;
 					 }else {
 						peak[i] *= 0.99; // peak slowly falls until a new peak is found
 					}
@@ -405,75 +384,52 @@
 						maxPeak = peak[i]*1000;
 					}
 					peakMeshes[i].position.y = Math.min(peak[i]*size, 40*size);
-					//peakMeshes[i].position.z = stepSign(200, i/100, speed);
 					//peakMeshes[i].position.y = peak[i]*size;
 				}
 				
 				var percent = 0;
 				
 				if(!audio.paused){
-					//speed = bd.win_bpm_int_lo;
-					// for(var i in grid){
-						
-						// grid[i].scale.y = fft.spectrum[i*guiSettings.step] != 0 ? fft.spectrum[i*guiSettings.step]* 1000: 1;
-						// grid[i].scale.y = Math.min(40, grid[i].scale.y);
-						// percent = Math.min(1.0, (grid[i].scale.y * size)/600);
-						// percent = Math.max(0,percent);
-						// grid[i].position.z = stepSign(i/100, speed);
-						
-						// if(guiSettings.colormap){
-							// interpC = interpolateColorsCompact(color1, color2, percent)
-							// grid[i].materials[0].color.setHex(interpC);
-							// peakMeshes[i].materials[0].color.setHex(interpC);
-						// }else{
-							// grid[i].materials[0].color.setHex(0xffffff);
-						    // grid[i].materials[0].color.setHSV(HSV[i], HSV[i], HSV[i]);
-							// peakMeshes[i].materials[0].color.setHex(0xffffff);
-							// peakMeshes[i].materials[0].color.setHSV(HSV[i], HSV[i], HSV[i]);
-						// }
-					// }
-					for(var i = 0 ; i < grid.length ; i++){
-						var avg = 0;
-						for(var j = 0 ; j < 5 ; j++) {
-							avg+=fft.spectrum[i*5+j]/5;
-						}
-						grid[i].scale.y = avg * 1000;
-						grid[i].scale.y = Math.min(40, grid[i].scale.y);
-						//grid[i].position.z = stepSign(200, i/100, speed);
-						percent = Math.min(1.0, (grid[i].scale.y * size)/600);
-						percent = Math.max(0,percent);
-											
-						if(guiSettings.colormap){
-							interpC = interpolateColorsCompact(color1, color2, percent)
-							grid[i].materials[0].color.setHex(interpC);
-							peakMeshes[i].materials[0].color.setHex(interpC);
-						}else{
-							grid[i].materials[0].color.setHex(0xffffff);
-						    grid[i].materials[0].color.setHSV(HSV[i], HSV[i], HSV[i]);
-							peakMeshes[i].materials[0].color.setHex(0xffffff);
-							peakMeshes[i].materials[0].color.setHSV(HSV[i], HSV[i], HSV[i]);
-						}
-					}
-					//signStep+=speed/5000*Math.PI;
-					signStep+=speed/10000;
-
-					if(signStep % 2*Math.PI === 0){
-						signStep = 0;
-					}
+					for(var i in grid){
+													
+																grid[i].scale.y = fft.spectrum[i*guiSettings.step] != 0 ? fft.spectrum[i*guiSettings.step]* 1000: 1;
+																grid[i].scale.y = Math.min(40, grid[i].scale.y);
+																percent = Math.min(1.0, (grid[i].scale.y * size)/600);
+																percent = Math.max(0,percent);
+																
+																if(guiSettings.colormap){
+																	interpC = interpolateColorsCompact(color1, color2, percent)
+																	grid[i].materials[0].color.setHex(interpC);
+																	peakMeshes[i].materials[0].color.setHex(interpC);
+																}else{
+																	grid[i].materials[0].color.setHex(0xffffff);
+																    grid[i].materials[0].color.setHSV(HSV[i], HSV[i], HSV[i]);
+																	peakMeshes[i].materials[0].color.setHex(0xffffff);
+																	peakMeshes[i].materials[0].color.setHSV(HSV[i], HSV[i], HSV[i]);
+																}
+															}
+					// for(var i = 0 ; i < grid.length ; i++){
+					// 						var avg = 0;
+					// 						for(var j = 0 ; j < 10 ; j++) {
+					// 							avg+=fft.spectrum[i*10+j]/10;
+					// 						}
+					// 						grid[i].scale.y = avg * 1000;
+					// 						grid[i].scale.y = Math.min(40, grid[i].scale.y);
+					// 						percent = Math.min(1.0, (grid[i].scale.y * size)/600);
+					// 						percent = Math.max(0,percent);
+					// 						
+					// 						if(guiSettings.colormap){
+					// 							interpC = interpolateColorsCompact(color1, color2, percent)
+					// 							grid[i].materials[0].color.setHex(interpC);
+					// 							peakMeshes[i].materials[0].color.setHex(interpC);
+					// 						}else{
+					// 							grid[i].materials[0].color.setHex(0xffffff);
+					// 						    grid[i].materials[0].color.setHSV(HSV[i], HSV[i], HSV[i]);
+					// 							peakMeshes[i].materials[0].color.setHex(0xffffff);
+					// 							peakMeshes[i].materials[0].color.setHSV(HSV[i], HSV[i], HSV[i]);
+					// 						}
+					// 					}
 				}
-			}
-			
-			//increment
-			function stepSign(scale, index, speed){
-				
-				return scale*Math.sin((signStep + index)*2*Math.PI);
-				
-			}
-			
-			function filter(framebuffer){
-				frameCount++;
-				cut.value = 2500 + Math.sin(frameCount/50) * 2400;
-				res.value = 10 + Math.sin(frameCount/100) * 9;
 			}
 			
 			function HandlePeaks(){
