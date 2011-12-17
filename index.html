@@ -78,8 +78,13 @@
       var container;
       var oldLight;
       var peakCubes = [];
+      var controls;
+
       var blue_texture = THREE.ImageUtils.loadTexture( "textures/blue_splat.jpg" );
       var grid_texture = THREE.ImageUtils.loadTexture( "textures/grid.jpg" );
+      var rust_texture = THREE.ImageUtils.loadTexture( "textures/rust.jpg" );
+      var plane_texture = rust_texture;
+
 			audio = document.getElementById('main-audio');
 			audio.addEventListener('MozAudioAvailable', audioAvailable, false);
 
@@ -129,10 +134,23 @@
 				scene = new THREE.Scene();
 
 				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 8000 );
-				camera.position.x = 500;
-				camera.position.y = 900;
+				camera.position.x = 1000;
+				camera.position.y = 1000;
 				camera.position.z = 1000;
+				camera.lookAt(new THREE.Vector3(500,500,0));
 				scene.add( camera );
+
+        controls = new THREE.TrackballControls( camera );
+        controls.target.set(800,0,0);
+      	controls.rotateSpeed = 1.0;
+				controls.zoomSpeed = 1.2;
+				controls.panSpeed = 0.8;
+				controls.noZoom = false;
+				controls.noPan = false;
+				controls.staticMoving = true;
+				controls.dynamicDampingFactor = 0.3;
+				controls.keys = [ 65 /*A*/, 83 /*S*/, 68 /*D*/ ];
+
 
         scene.add( new THREE.AmbientLight( 0x808080 ) );
 
@@ -176,25 +194,8 @@
           grid.push( cube );
 				}
 
-        grid_texture.wrapT = grid_texture.wrapS = THREE.RepeatWrapping;
-        blue_texture.wrapT = blue_texture.wrapS = THREE.RepeatWrapping;
-        geo = new THREE.PlaneGeometry( 2*sizeres, 2*sizeres );
-        plane = new THREE.Mesh( geo, new THREE.MeshBasicMaterial( {map: grid_texture, wireframe: false}));
-        plane.position.x = halfsizeres;
-        plane.position.z = 0;
-        plane.rotation.x = - 90 * Math.PI / 180;
-        plane.visible = true;
-        plane.receiveShadow=true;
-        scene.add( plane );
-
-        var star_texture = THREE.ImageUtils.loadTexture('textures/sphere_star_half.png');
-        star_texture.wrapS = star_texture.wrapT = THREE.RepeatWrapping;
-        var sphereMaterial = new THREE.MeshBasicMaterial({map: star_texture});
-        var sphereGeo = new THREE.SphereGeometry(3000, 10, 10);
-        var sphere = new THREE.Mesh( sphereGeo, sphereMaterial);
-        sphere.position.set(0,0,0);
-        sphere.doubleSided = true;
-        scene.add( sphere );
+        setupPlane();
+        setupStars()
 
 				var position = grid[Math.floor(grid.length/2)].position;
 
@@ -228,16 +229,31 @@
 
         if(showShadows) {
           scene.remove(plane)
-          blue_texture.wrapT = blue_texture.wrapS = THREE.RepeatWrapping;
-          geo = new THREE.PlaneGeometry( 2*sizeres, 2*sizeres );
-          plane = new THREE.Mesh( geo, new THREE.MeshBasicMaterial( {map: blue_texture, wireframe: false}));
-          plane.position.x = halfsizeres;
-          plane.position.z = 0;
-          plane.rotation.x = - 90 * Math.PI / 180;
-          plane.visible = true;
-          plane.receiveShadow=true;
-          scene.add( plane );
+          setupPlane();
         }
+      }
+
+      function setupPlane() {
+        plane_texture.wrapT = plane_texture.wrapS = THREE.RepeatWrapping;
+        geo = new THREE.PlaneGeometry( 2*sizeres, 2*sizeres );
+        plane = new THREE.Mesh( geo, new THREE.MeshBasicMaterial( {map: plane_texture}));
+        plane.position.x = halfsizeres;
+        plane.position.z = 0;
+        plane.rotation.x = - 90 * Math.PI / 180;
+        plane.visible = true;
+        plane.receiveShadow=true;
+        scene.add( plane );
+      }
+
+      function setupStars() {
+        var star_texture = THREE.ImageUtils.loadTexture('textures/sphere_star_half.png');
+        star_texture.wrapS = star_texture.wrapT = THREE.RepeatWrapping;
+        var sphereMaterial = new THREE.MeshBasicMaterial({map: star_texture});
+        var sphereGeo = new THREE.SphereGeometry(3000, 10, 10);
+        var sphere = new THREE.Mesh( sphereGeo, sphereMaterial);
+        sphere.position.set(0,0,0);
+        sphere.doubleSided = true;
+        scene.add( sphere );
       }
 
       function switchPeaks(display) {
@@ -259,12 +275,29 @@
 				gui.autoplace = true;
 				guiSettings = {
 					track: 3,
+					plane: 1,
 					step: 1,
 					orbitCamera: false,
 					colormap: false,
 					shadows: true,
 					dropdownCubes: true
 				};
+
+        gui.add(guiSettings, 'plane').options({'Rust': 0, 'Grid': 1, 'Blue.ogg': 2 }).listen().onChange(function(newVal){
+          switch(newVal){
+            case 0:
+              plane_texture = rust_texture;
+              break;
+            case 1:
+              plane_texture = grid_texture;
+              break;
+            case 2:
+              plane_texture = blue_texture;
+              break;
+          }
+          scene.remove(plane);
+          setupPlane();
+        });
 
 				gui.add(guiSettings, 'track').options({'Revolve.ogg': 0, 'VQ.ogg': 1, 'FilterFade.ogg': 2, 'michael.ogg': 3, 'Biggie.ogg': 4 }).onChange(function(newVal){
 
@@ -326,58 +359,6 @@
 				gui.add(guiSettings, 'dropdownCubes').listen().onChange(function(){
 				  switchPeaks(guiSettings.dropdownCubes)
 				});
-			}
-
-			function wheel(event){
-			        var delta = 0;
-			        if (!event) /* For IE. */
-			                event = window.event;
-			        if (event.wheelDelta) { /* IE/Opera. */
-			                delta = event.wheelDelta/120;
-			        } else if (event.detail) { /** Mozilla case. */
-			                /** In Mozilla, sign of delta is different than in IE.
-			                 * Also, delta is multiple of 3.
-			                 */
-			                delta = -event.detail/3;
-			        }
-			        /** If delta is nonzero, handle it.
-			         * Basically, delta is now positive if wheel was scrolled up,
-			         * and negative, if wheel was scrolled down.
-			         */
-			        if (delta){
-			                camera.position.z += delta*10;
-							camera.position.y += delta;
-							position = grid[Math.floor(grid.length/2)].position;
-							camera.lookAt(new THREE.Vector3(position.x, 100, position.z));
-					}
-			        /** Prevent default actions caused by mouse wheel.
-			         * That might be ugly, but we handle scrolls somehow
-			         * anyway, so don't bother here..
-			         */
-			        if (event.preventDefault)
-			                event.preventDefault();
-				event.returnValue = false;
-			}
-
-			function onDocumentMouseMove( event ) {
-
-				mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-				mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-
-				ray.direction = projector.unprojectVector( mouse.clone(), camera );
-				ray.direction.subSelf( camera.position ).normalize();
-
-        // intersects = ray.intersectScene( scene );
-        // if(intersects){
-        //  //intersects[0].object.materials[0].color.setRGB(0,0,0);
-        // }
-
-				camera.position.x = 1500 * Math.sin( mouse.x*50 * Math.PI / 360 ) + 500;
-				camera.position.y = 500 * Math.cos( mouse.y*50 * Math.PI / 360 ) + 400;
-
-				position = grid[Math.floor(grid.length/2)].position;
-				camera.lookAt(new THREE.Vector3(position.x, 100, position.z));
-
 			}
 
 			function interpolateColorsCompact( a, b, Number ){
@@ -504,22 +485,15 @@
 
 					}
 
+          controls.update();
 					renderer.render( scene, camera );
 				}
 			}
-
-      function addListeners() {
-        document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-				window.addEventListener( 'DOMMouseScroll',  wheel,  false);
-      }
 
 			if ( Detector.webgl ) {
 
 				init();
 				animate();
-
-        // setTimeout("addListeners()", 500);
-
 
 			} else {
 				document.body.appendChild( Detector.getWebGLErrorMessage() );
