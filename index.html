@@ -154,10 +154,10 @@
 
         scene.add( new THREE.AmbientLight( 0x808080 ) );
 
-				light = new THREE.SpotLight( 0xffffff, 1.5 );
+				light = new THREE.SpotLight( 0xffffff, 2 );
 				light.castShadow = true;
-				light.position.set( 500, 200, 300 );
-				light.target.position.set( 0, 0, 0 );
+				light.position.set( 400, 300, 2000 );
+				light.target.position.set( 600, 0, -100 );
 			  scene.add( light );
 
 				lightBall = new THREE.Mesh(new THREE.SphereGeometry(10,10,10), new THREE.MeshLambertMaterial( { color: 0x4694C8} ));
@@ -189,7 +189,7 @@
           cube = new THREE.Mesh( geometry, material );
           cube.position.x = size + ( ( i % res ) * size );
           cube.castShadow = true;
-          cube.receiveShadow = true;
+          cube.receiveShadow = false;
           scene.add( cube );
           grid.push( cube );
 				}
